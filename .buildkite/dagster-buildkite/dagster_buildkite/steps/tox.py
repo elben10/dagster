@@ -58,6 +58,9 @@ def build_tox_step(
         *(extra_commands_post or []),
     ]
 
+    print("BUILDKITE_ANALYTICS_TOKEN is set?")
+    print(os.getenv("BUILDKITE_ANALYTICS_TOKEN") is not None)
+
     return (
         CommandStepBuilder(label)
         .run(*commands)
