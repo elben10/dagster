@@ -51,7 +51,6 @@ def build_tox_step(
     tox_command = " ".join(tox_command_parts)
     commands = [
         'if [[ -z "${BUILDKITE_ANALYTICS_TOKEN}" ]]; echo "BUILDKITE_ANALYTICS_TOKEN set"; fi',
-        "&&",
         *(extra_commands_pre or []),
         f"cd {root_dir}",
         "pip install -U virtualenv",
