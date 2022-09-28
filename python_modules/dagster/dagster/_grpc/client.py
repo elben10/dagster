@@ -3,7 +3,7 @@ import subprocess
 import sys
 import warnings
 from contextlib import contextmanager
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional, Tuple
 
 import grpc
 from grpc_health.v1 import health_pb2
@@ -105,21 +105,56 @@ class DagsterGrpcClient:
         ) as channel:
             yield channel
 
-    def _query(self, method, request_type, timeout=DEFAULT_GRPC_TIMEOUT, **kwargs):
+    def _get_response(
+        self,
+        method,
+        request,
+        metadata: Optional[List[Tuple[str, str]]] = None,
+        timeout=DEFAULT_GRPC_TIMEOUT,
+    ):
+        with self._channel() as channel:
+            stub = DagsterApiStub(channel)
+            return getattr(stub, method)(request, metadata=metadata, timeout=timeout)
+
+    def _query(
+        self,
+        method,
+        request_type,
+        timeout=DEFAULT_GRPC_TIMEOUT,
+        metadata: Optional[List[Tuple[str, str]]] = None,
+        **kwargs,
+    ):
         try:
-            with self._channel() as channel:
-                stub = DagsterApiStub(channel)
-                response = getattr(stub, method)(request_type(**kwargs), timeout=timeout)
-            return response
+            return self._get_response(
+                method, request=request_type(**kwargs), metadata=metadata, timeout=timeout
+            )
         except Exception as e:
             raise DagsterUserCodeUnreachableError("Could not reach user code server") from e
 
-    def _streaming_query(self, method, request_type, timeout=DEFAULT_GRPC_TIMEOUT, **kwargs):
+    def _get_streaming_response(
+        self,
+        method,
+        request,
+        metadata: Optional[List[Tuple[str, str]]] = None,
+        timeout=DEFAULT_GRPC_TIMEOUT,
+    ):
+
+        with self._channel() as channel:
+            stub = DagsterApiStub(channel)
+            yield from getattr(stub, method)(request, metadata=metadata, timeout=timeout)
+
+    def _streaming_query(
+        self,
+        method,
+        request_type,
+        timeout=DEFAULT_GRPC_TIMEOUT,
+        metadata: Optional[List[Tuple[str, str]]] = None,
+        **kwargs,
+    ):
         try:
-            with self._channel() as channel:
-                stub = DagsterApiStub(channel)
-                response_stream = getattr(stub, method)(request_type(**kwargs), timeout=timeout)
-                yield from response_stream
+            yield from self._get_streaming_response(
+                method, request=request_type(**kwargs), metadata=metadata, timeout=timeout
+            )
         except Exception as e:
             raise DagsterUserCodeUnreachableError("Could not reach user code server") from e
 
