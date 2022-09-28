@@ -1,5 +1,5 @@
 . ./.buildkite/scripts/docker_prune.sh
 
-if [[ -z "${BUILDKITE_ANALYTICS_TOKEN}" ]]
+if [[ -z "${BUILDKITE_ANALYTICS_TOKEN}" ]]; then
   echo "BUILDKITE_ANALYTICS_TOKEN set"
 fi
